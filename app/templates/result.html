@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Result • Fraud Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="dashLayout">
+    <!-- Sidebar -->
+    <aside class="dashSide glass">
+      <div class="dashBrand">
+        <div class="dashLogo">{% if is_fraud %}🚨{% else %}✅{% endif %}</div>
+        <div>
+          <div class="dashTitle">Fraud Detection</div>
+          <div class="dashSub">Prediction Result</div>
+        </div>
+      </div>
+
+      <nav class="dashNav">
+        <a class="dashNavItem" href="/">📊 Dashboard</a>
+        <a class="dashNavItem" href="/check">💳 Check Transaction</a>
+      </nav>
+
+      <div class="dashUser">
+        <div class="userAvatar">👤</div>
+        <div class="userText">
+          <div class="userName">{{ user.username }}</div>
+          {% if user.role == 'admin' %}
+            <span class="roleBadge roleAdmin">ADMIN</span>
+          {% else %}
+            <span class="roleBadge">USER</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="dashActions">
+        {% if user.role == 'admin' %}
+          <a class="topbarBtn" href="/admin">Admin</a>
+        {% endif %}
+        <a class="topbarBtn" href="/profile">Profile</a>
+        <a class="topbarBtn danger" href="/logout">Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashMain">
+      <div class="dashTop">
+        <div>
+          <h1 class="dashH1">Transaction Result</h1>
+          <p class="dashP">Prediction summary and the entered transaction details.</p>
+        </div>
+        <div class="dashTopBtns">
+          <a class="btnGhost" href="/check">← New Check</a>
+          <a class="btnGhost" href="/">Dashboard</a>
+        </div>
+      </div>
+
+      <section class="dashCard glass {% if is_fraud %}glowFraud{% else %}glowSafe{% endif %}" style="max-width: 860px;">
+        <div class="dashCardHead">
+          <h2>Status</h2>
+          <span class="muted">{% if is_fraud %}High attention required{% else %}No fraud indicators found{% endif %}</span>
+        </div>
+
+        <div class="status {% if is_fraud %}fraud{% else %}safe{% endif %}">
+          {% if is_fraud %}Fraudulent Transaction{% else %}Safe Transaction{% endif %}
+        </div>
+
+        <div class="metricRow">
+          <div class="metric">
+            <div class="metricLabel">Fraud Probability</div>
+            <div class="metricValue">{{ (fraud_probability * 100) | round(2) }}%</div>
+          </div>
+          <div class="metric">
+            <div class="metricLabel">Decision</div>
+            <div class="metricValue">{% if is_fraud %}FRAUD{% else %}NOT FRAUD{% endif %}</div>
+          </div>
+        </div>
+
+        <div class="detailsCard">
+          <div class="riskRow">
+            <div>
+              <div class="metricLabel">Confidence</div>
+              <div class="riskPercent">{{ (fraud_probability * 100) | round(2) }}% likelihood</div>
+            </div>
+
+            <div class="riskPill
+              {% if risk_level == 'High' %}riskHigh{% elif risk_level == 'Medium' %}riskMed{% else %}riskLow{% endif %}">
+              {{ risk_level }} Risk
+            </div>
+          </div>
+
+          <div class="bar">
+            <div class="barFill
+              {% if risk_level == 'High' %}barHigh{% elif risk_level == 'Medium' %}barMed{% else %}barLow{% endif %}"
+              style="width: {{ (fraud_probability * 100) | round(0) }}%;">
+            </div>
+          </div>
+        </div>
+
+        <div class="dashGrid2" style="margin-top:0;">
+          <div class="detailsCard" style="margin-top:0;">
+            <h2>Why this result?</h2>
+            <ul class="reasons">
+              {% for r in reasons %}
+                <li>{{ r }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="detailsCard" style="margin-top:0;">
+            <h2>Transaction Details</h2>
+            <ul class="details">
+              <li><span class="k">Amount</span><span class="v">₹{{ amount_display }}</span></li>
+              <li><span class="k">Payment Method</span><span class="v">{{ payment_method }}</span></li>
+              <li><span class="k">Merchant Category</span><span class="v">{{ merchant_category }}</span></li>
+              <li><span class="k">Device</span><span class="v">{{ device_label }}</span></li>
+              <li><span class="k">Location</span><span class="v">{{ location_label }}</span></li>
+              <li><span class="k">Time</span><span class="v">{{ transaction_time }}</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="footnote" style="text-align:left;max-width:860px;">
+        Tip: Visit the Dashboard to see overall patterns from <b>onlinefraud.csv</b>.
+      </div>
+    </main>
+  </div>
+</body>
+</html>

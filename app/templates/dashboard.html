@@ -1,0 +1,259 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard • Fraud Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="dashLayout">
+    <!-- Sidebar -->
+    <aside class="dashSide glass">
+      <div class="dashBrand">
+        <div class="dashLogo">🛡️</div>
+        <div>
+          <div class="dashTitle">Fraud Detection</div>
+          <div class="dashSub">Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="dashNav">
+        <a class="dashNavItem active" href="/">📊 Dashboard</a>
+        <a class="dashNavItem" href="/check">💳 Check Transaction</a>
+      </nav>
+
+      <div class="dashUser">
+        <div class="userAvatar">👤</div>
+        <div class="userText">
+          <div class="userName">{{ user.username }}</div>
+          {% if user.role == 'admin' %}
+            <span class="roleBadge roleAdmin">ADMIN</span>
+          {% else %}
+            <span class="roleBadge">USER</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="dashActions">
+        <a class="topbarBtn" href="/profile">Profile</a>
+        <a class="topbarBtn danger" href="/logout">Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashMain">
+      <div class="dashTop">
+        <div>
+          <h1 class="dashH1">Fraud Analytics Overview</h1>
+          <p class="dashP">All numbers below are calculated from <b>onlinefraud.csv</b>.</p>
+        </div>
+        <div class="dashTopBtns">
+          <a class="btnPrimary small" href="/check">+ New Check</a>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <section class="kpiGrid">
+        <div class="kpiCard glass">
+          <div class="kpiLabel">Total Transactions</div>
+          <div class="kpiValue">{{ kpi.total_txn }}</div>
+          <div class="kpiHint">All rows in dataset</div>
+        </div>
+
+        <div class="kpiCard glass">
+          <div class="kpiLabel">Fraud Transactions</div>
+          <div class="kpiValue">{{ kpi.fraud_txn }}</div>
+          <div class="kpiHint">Where is_fraud = 1</div>
+        </div>
+
+        <div class="kpiCard glass">
+          <div class="kpiLabel">Fraud Rate</div>
+          <div class="kpiValue">{{ kpi.fraud_rate }}%</div>
+          <div class="kpiHint">fraud / total</div>
+        </div>
+
+        <div class="kpiCard glass">
+          <div class="kpiLabel">Average Amount</div>
+          <div class="kpiValue">₹{{ kpi.avg_amount }}</div>
+          <div class="kpiHint">Mean of amount</div>
+        </div>
+      </section>
+
+      <!-- Secondary stats -->
+      <section class="kpiGrid kpiGrid2">
+        <div class="kpiCard glass">
+          <div class="kpiLabel">New Device %</div>
+          <div class="kpiValue">{{ device_new_pct }}%</div>
+          <div class="kpiHint">device_new = 1</div>
+        </div>
+        <div class="kpiCard glass">
+          <div class="kpiLabel">Location Change %</div>
+          <div class="kpiValue">{{ location_change_pct }}%</div>
+          <div class="kpiHint">location_change = 1</div>
+        </div>
+      </section>
+
+      <section class="dashGrid2">
+        <!-- Alerts -->
+        <div class="dashCard glass">
+          <div class="dashCardHead">
+            <h2>Unusual transaction alerts</h2>
+            <span class="muted">From your CSV</span>
+          </div>
+
+          <div class="alertList">
+            {% for a in alerts %}
+              <div class="alertItem">
+                <div class="alertIcon">⚠️</div>
+                <div>
+                  <div class="alertTitle">{{ a.title }}</div>
+                  <div class="alertDesc">{{ a.desc }}</div>
+                  <div class="alertHint">{{ a.hint }}</div>
+                </div>
+              </div>
+            {% endfor %}
+            {% if alerts|length == 0 %}
+              <div class="muted">No alerts found.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Day vs Night chart -->
+        <div class="dashCard glass">
+          <div class="dashCardHead">
+            <h2>Fraud by Time (Day vs Night)</h2>
+            <span class="muted">Safe vs Fraud counts</span>
+          </div>
+          <div class="chartBox">
+            <canvas id="dayNightChart" height="160"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Payment method + Merchant category -->
+      <section class="dashGrid2">
+        <div class="dashCard glass">
+          <div class="dashCardHead">
+            <h2>Top Payment Methods</h2>
+            <span class="muted">Count + fraud rate</span>
+          </div>
+
+          <div class="barList">
+            {% set maxCount = (by_method[0].count if by_method|length>0 else 1) %}
+            {% for row in by_method %}
+              <div class="barRow">
+                <div class="barName">{{ row.name }}</div>
+                <div class="barTrack">
+                  <div class="barFillDash" style="width: {{ (row.count / maxCount * 100) | round(0) }}%;"></div>
+                </div>
+                <div class="barMeta">
+                  <span class="pill">{{ row.count }}</span>
+                  <span class="pill dangerSoft">{{ row.fraud_rate }}%</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="dashCard glass">
+          <div class="dashCardHead">
+            <h2>Top Merchant Categories</h2>
+            <span class="muted">Count + fraud rate</span>
+          </div>
+
+          <div class="barList">
+            {% set maxCount2 = (by_category[0].count if by_category|length>0 else 1) %}
+            {% for row in by_category %}
+              <div class="barRow">
+                <div class="barName">{{ row.name }}</div>
+                <div class="barTrack">
+                  <div class="barFillDash2" style="width: {{ (row.count / maxCount2 * 100) | round(0) }}%;"></div>
+                </div>
+                <div class="barMeta">
+                  <span class="pill">{{ row.count }}</span>
+                  <span class="pill dangerSoft">{{ row.fraud_rate }}%</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent transactions -->
+      <section class="dashCard glass">
+        <div class="dashCardHead">
+          <h2>Recent Transactions (last 12 rows)</h2>
+          <span class="muted">From your CSV</span>
+        </div>
+
+        <div class="tableWrap">
+          <table class="dashTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Category</th>
+                <th>Time</th>
+                <th>Device</th>
+                <th>Location</th>
+                <th>Label</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recent_rows %}
+                <tr>
+                  <td>#{{ r.txn_id }}</td>
+                  <td>₹{{ r.amount }}</td>
+                  <td>{{ r.payment_method }}</td>
+                  <td>{{ r.merchant_category }}</td>
+                  <td>{{ r.transaction_time }}</td>
+                  <td>{% if r.device_new == 1 %}New 🆕{% else %}Same ✅{% endif %}</td>
+                  <td>{% if r.location_change == 1 %}Changed 🧭{% else %}Same 📍{% endif %}</td>
+                  <td>
+                    {% if r.is_fraud == 1 %}
+                      <span class="tag tagBad">Fraud</span>
+                    {% else %}
+                      <span class="tag tagOk">Safe</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="footnote" style="margin-top:14px;">
+        CSV used: <b>{{ csv_path }}</b>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const charts = {{ charts | tojson }};
+
+    // Day vs Night stacked bars: Safe vs Fraud
+    const ctx = document.getElementById("dayNightChart");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: charts.dayNight.labels,
+        datasets: [
+          { label: "Safe", data: charts.dayNight.safe, stack: "s" },
+          { label: "Fraud", data: charts.dayNight.fraud, stack: "s" }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom" } },
+        scales: { x: { stacked: true }, y: { stacked: true } }
+      }
+    });
+  </script>
+</body>
+</html>

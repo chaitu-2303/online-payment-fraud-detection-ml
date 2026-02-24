@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Check Transaction • Fraud Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="dashLayout">
+    <!-- Sidebar (same feel as dashboard) -->
+    <aside class="dashSide glass">
+      <div class="dashBrand">
+        <div class="dashLogo">🛡️</div>
+        <div>
+          <div class="dashTitle">Fraud Detection</div>
+          <div class="dashSub">Check Transaction</div>
+        </div>
+      </div>
+
+      <nav class="dashNav">
+        <a class="dashNavItem" href="/">📊 Dashboard</a>
+        <a class="dashNavItem active" href="/check">💳 Check Transaction</a>
+      </nav>
+
+      <div class="dashUser">
+        <div class="userAvatar">👤</div>
+        <div class="userText">
+          <div class="userName">{{ user.username }}</div>
+          {% if user.role == 'admin' %}
+            <span class="roleBadge roleAdmin">ADMIN</span>
+          {% else %}
+            <span class="roleBadge">USER</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="dashActions">
+        {% if user.role == 'admin' %}
+          <a class="topbarBtn" href="/admin">Admin</a>
+        {% endif %}
+        <a class="topbarBtn" href="/profile">Profile</a>
+        <a class="topbarBtn danger" href="/logout">Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="dashMain">
+      <div class="dashTop">
+        <div>
+          <h1 class="dashH1">Check a Transaction</h1>
+          <p class="dashP">Enter details and run the ML prediction to estimate fraud risk.</p>
+        </div>
+        <div class="dashTopBtns">
+          <a class="btnGhost" href="/">← Back to Dashboard</a>
+        </div>
+      </div>
+
+      <section class="dashCard glass" style="max-width: 720px;">
+        <div class="dashCardHead">
+          <h2>Transaction Input</h2>
+          <span class="muted">Fields used by your model</span>
+        </div>
+
+        <form action="/predict" method="post" class="form" autocomplete="off">
+          <div class="field">
+            <label>Transaction Amount (₹)</label>
+            <div class="inputWrap">
+              <span class="icon">₹</span>
+              <input id="amount_display" type="text" inputmode="numeric" placeholder="Enter amount (e.g., 2,00,000)" required>
+              <input id="amount_raw" type="hidden" name="amount_raw" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Payment Method</label>
+            <div class="inputWrap">
+              <span class="icon">💳</span>
+              <select name="payment_method" required>
+                <option value="" selected disabled>Select payment method</option>
+                <option>UPI 💸</option>
+                <option>Debit Card 💳</option>
+                <option>Credit Card 💳</option>
+                <option>NetBanking 🏦</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Merchant Category</label>
+            <div class="inputWrap">
+              <span class="icon">🏪</span>
+              <select name="merchant_category" required>
+                <option value="" selected disabled>Select merchant category</option>
+                <option>Grocery 🛒</option>
+                <option>Shopping 🛍️</option>
+                <option>Food & Dining 🍽️</option>
+                <option>Travel & Transport ✈️</option>
+                <option>Fuel ⛽</option>
+                <option>Entertainment 🎬</option>
+                <option>Gaming 🎮</option>
+                <option>Electronics 💻</option>
+                <option>Healthcare 🏥</option>
+                <option>Education 🎓</option>
+                <option>Utilities & Bills 💡</option>
+                <option>Finance & Investments 📈</option>
+                <option>Subscriptions 🔁</option>
+                <option>Luxury Goods 💎</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Device Used</label>
+              <div class="inputWrap">
+                <span class="icon">📱</span>
+                <select name="device_new" required>
+                  <option value="" selected disabled>Select device</option>
+                  <option value="0">Same Device ✅</option>
+                  <option value="1">New Device 🆕</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Location</label>
+              <div class="inputWrap">
+                <span class="icon">📍</span>
+                <select name="location_change" required>
+                  <option value="" selected disabled>Select location</option>
+                  <option value="0">Same Location ✅</option>
+                  <option value="1">Different Location 🧭</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Transaction Time</label>
+            <div class="inputWrap">
+              <span class="icon">🕒</span>
+              <select name="transaction_time" required>
+                <option value="" selected disabled>Select time</option>
+                <option>Day ☀️</option>
+                <option>Night 🌙</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btnPrimary">Run Prediction</button>
+        </form>
+
+        <div class="footnote">Tip: Amount is auto-formatted in INR style.</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function formatINR(numStr){
+      if(!numStr) return "";
+      let s = String(numStr).replace(/[^\d]/g,"");
+      if(!s) return "";
+      if(s.length<=3) return s;
+      let last3 = s.slice(-3);
+      let rest = s.slice(0,-3);
+      let out = "";
+      while(rest.length>2){
+        out = "," + rest.slice(-2) + out;
+        rest = rest.slice(0,-2);
+      }
+      if(rest) out = rest + out;
+      return out + "," + last3;
+    }
+
+    const display = document.getElementById("amount_display");
+    const raw = document.getElementById("amount_raw");
+    const form = document.querySelector("form");
+
+    display.addEventListener("input", () => {
+      const digits = display.value.replace(/[^\d]/g, "");
+      raw.value = digits ? digits : "";
+      display.value = formatINR(digits);
+    });
+
+    form.addEventListener("submit", (e) => {
+      if(!raw.value){
+        e.preventDefault();
+        display.focus();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="container">
+    <div class="glass card">
+      <div class="header">
+        <div class="logo">🧑‍💼</div>
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p class="subtitle">Manage users, roles, and profiles</p>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px 0;padding:14px 18px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(8px);box-shadow:inset 0 0 1px rgba(255,255,255,.1);">
+        <div>
+          Signed in as <b>{{ user.username }}</b>
+          <span style="margin-left:8px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.15);color:#fff3c4;font-weight:600;font-size:11px;">ADMIN</span>
+          <span style="margin-left:8px;opacity:.8;">(admins: {{ admin_count }})</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/">Home</a>
+          <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/profile">Profile</a>
+          <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/logout">Logout</a>
+        </div>
+      </div>
+
+      {% if msg %}
+        <div style="margin:0 0 12px 0; padding:12px 16px; border-radius:12px; background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); backdrop-filter:blur(8px); box-shadow:inset 0 0 1px rgba(34,197,94,.15); color:#86efac;">
+          {{ msg }}
+        </div>
+      {% endif %}
+
+      {% if err %}
+        <div style="margin:0 0 12px 0; padding:12px 16px; border-radius:12px; background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); backdrop-filter:blur(8px); box-shadow:inset 0 0 1px rgba(239,68,68,.15); color:#ff9999;">
+          {{ err }}
+        </div>
+      {% endif %}
+
+      <div style="overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);backdrop-filter:blur(10px);box-shadow:inset 0 0 1px rgba(255,255,255,.1);">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);box-shadow:inset 0 0 1px rgba(255,255,255,.1);">
+              <th style="text-align:left;padding:10px 12px;">Username</th>
+              <th style="text-align:left;padding:10px 12px;">Role</th>
+              <th style="text-align:left;padding:10px 12px;">Created</th>
+              <th style="text-align:left;padding:10px 12px;">Last Login</th>
+              <th style="text-align:left;padding:10px 12px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.10);">
+                {{ u.username }}
+              </td>
+              <td style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.10);">
+                {% if u.role == 'admin' %}
+                  <span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.15);color:#fff3c4;font-weight:600;font-size:12px;">admin</span>
+                {% else %}
+                  <span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.10);font-weight:600;font-size:12px;">user</span>
+                {% endif %}
+              </td>
+              <td style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.10);opacity:.85;">
+                {{ u.created_at if u.created_at else "—" }}
+              </td>
+              <td style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.10);opacity:.85;">
+                {{ u.last_login if u.last_login else "—" }}
+              </td>
+              <td style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.10);">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  {% if u.username == user.username %}
+                    <span style="opacity:.7;">(you)</span>
+                  {% else %}
+                    {% if u.role == 'user' %}
+                      <form method="post" action="/admin/role" style="margin:0;">
+                        <input type="hidden" name="username" value="{{ u.username }}">
+                        <input type="hidden" name="role" value="admin">
+                        <button class="btnGhost" style="margin-top:0;padding:7px 10px" type="submit">Promote → Admin</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="/admin/role" style="margin:0;">
+                        <input type="hidden" name="username" value="{{ u.username }}">
+                        <input type="hidden" name="role" value="user">
+                        <button class="btnGhost" style="margin-top:0;padding:7px 10px" type="submit">Demote → User</button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footnote">
+        Notes: You cannot change your own role from this dashboard. Also, the last admin cannot be demoted.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
