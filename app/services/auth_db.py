@@ -35,8 +35,36 @@ def init_db() -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS predictions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            amount REAL,
+            payment_method TEXT,
+            merchant_category TEXT,
+            device_type TEXT,
+            location TEXT,
+            transaction_frequency INTEGER,
+            account_age_days INTEGER,
+            avg_transaction_amount REAL,
+            failed_transactions_24h INTEGER,
+            is_international INTEGER,
+            device_change INTEGER,
+            transaction_hour INTEGER,
+            fraud_probability REAL,
+            is_fraud INTEGER,
+            risk_level TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (username) REFERENCES users(username)
+        )
+        """
+    )
     conn.commit()
     conn.close()
+
+
+init_db()
 
 
 def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
@@ -50,7 +78,6 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
 
 
 def _total_users() -> int:
-    init_db()
     conn = get_conn()
     row = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()
     conn.close()
@@ -58,7 +85,6 @@ def _total_users() -> int:
 
 
 def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
-    init_db()
     username = username.strip().lower()
     conn = get_conn()
     row = conn.execute(
@@ -71,21 +97,7 @@ def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     return _row_to_dict(row)
 
 
-def get_user_public(username: str) -> Optional[Dict[str, Any]]:
-    user = get_user_by_username(username)
-    if not user:
-        return None
-    return {
-        "id": user["id"],
-        "username": user["username"],
-        "role": user["role"],
-        "created_at": user["created_at"],
-        "last_login": user["last_login"],
-    }
-
-
 def list_users() -> List[Dict[str, Any]]:
-    init_db()
     conn = get_conn()
     rows = conn.execute(
         "SELECT id, username, role, created_at, last_login FROM users ORDER BY id ASC"
@@ -95,7 +107,6 @@ def list_users() -> List[Dict[str, Any]]:
 
 
 def count_admins() -> int:
-    init_db()
     conn = get_conn()
     row = conn.execute(
         "SELECT COUNT(*) AS c FROM users WHERE LOWER(role) = 'admin'"
@@ -105,7 +116,6 @@ def count_admins() -> int:
 
 
 def set_user_role(username: str, new_role: str) -> bool:
-    init_db()
     username = username.strip().lower()
     new_role = new_role.strip().lower()
     if new_role not in {"admin", "user"}:
@@ -121,7 +131,6 @@ def set_user_role(username: str, new_role: str) -> bool:
 
 
 def update_last_login(username: str) -> None:
-    init_db()
     username = username.strip().lower()
     conn = get_conn()
     conn.execute(
@@ -133,11 +142,8 @@ def update_last_login(username: str) -> None:
 
 
 def create_user(username: str, password: str) -> bool:
-    init_db()
     username = username.strip().lower()
-
-    # Limit password to 72 bytes when encoded as UTF-8, then decode safely
-    password_limited = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    password_limited = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
     password_hash = pwd_context.hash(password_limited)
     created_at = _utc_now_iso()
     role = "admin" if _total_users() == 0 else "user"
@@ -156,9 +162,7 @@ def create_user(username: str, password: str) -> bool:
 
 
 def verify_user(username: str, password: str) -> bool:
-    init_db()
     username = username.strip().lower()
-
     conn = get_conn()
     row = conn.execute(
         "SELECT password_hash FROM users WHERE username = ?",
@@ -169,9 +173,80 @@ def verify_user(username: str, password: str) -> bool:
     if not row:
         return False
 
-    # Apply the same UTF-8 72-byte limit before verification
-    password_limited = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    password_limited = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
     try:
         return pwd_context.verify(password_limited, row["password_hash"])
     except Exception:
         return False
+
+
+def save_prediction(username: str, txn: Dict[str, Any], result: Dict[str, Any]) -> int:
+    conn = get_conn()
+    cur = conn.execute(
+        """INSERT INTO predictions
+        (username, amount, payment_method, merchant_category, device_type,
+         location, transaction_frequency, account_age_days, avg_transaction_amount,
+         failed_transactions_24h, is_international, device_change, transaction_hour,
+         fraud_probability, is_fraud, risk_level, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            username,
+            txn.get("amount", 0),
+            txn.get("payment_method", ""),
+            txn.get("merchant_category", ""),
+            txn.get("device_type", ""),
+            txn.get("location", ""),
+            txn.get("transaction_frequency", 0),
+            txn.get("account_age_days", 0),
+            txn.get("avg_transaction_amount", 0),
+            txn.get("failed_transactions_24h", 0),
+            txn.get("is_international", 0),
+            txn.get("device_change", 0),
+            txn.get("transaction_time", 0),
+            result.get("fraud_probability", 0),
+            1 if result.get("is_fraud") else 0,
+            result.get("risk_level", "Low"),
+            _utc_now_iso(),
+        ),
+    )
+    conn.commit()
+    pred_id = cur.lastrowid
+    conn.close()
+    return pred_id
+
+
+def get_user_predictions(username: str, limit: int = 50) -> List[Dict[str, Any]]:
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT id, amount, payment_method, merchant_category, device_type,
+                  location, fraud_probability, is_fraud, risk_level, created_at
+           FROM predictions WHERE username = ?
+           ORDER BY id DESC LIMIT ?""",
+        (username.strip().lower(), limit),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_prediction_stats(username: str = None) -> Dict[str, Any]:
+    conn = get_conn()
+    if username:
+        total = conn.execute(
+            "SELECT COUNT(*) AS c FROM predictions WHERE username = ?", (username,)
+        ).fetchone()["c"]
+        fraud = conn.execute(
+            "SELECT COUNT(*) AS c FROM predictions WHERE username = ? AND is_fraud = 1",
+            (username,),
+        ).fetchone()["c"]
+    else:
+        total = conn.execute("SELECT COUNT(*) AS c FROM predictions").fetchone()["c"]
+        fraud = conn.execute(
+            "SELECT COUNT(*) AS c FROM predictions WHERE is_fraud = 1"
+        ).fetchone()["c"]
+    conn.close()
+    return {
+        "total_checks": total,
+        "fraud_detected": fraud,
+        "safe_detected": total - fraud,
+        "fraud_rate": round((fraud / total * 100), 2) if total > 0 else 0,
+    }

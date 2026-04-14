@@ -41,16 +41,12 @@ def _verify_remember(secret: str, token: str) -> Optional[str]:
         raw = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
         username, exp_str, sig = raw.split("|", 2)
         exp = int(exp_str)
-
         if exp < int(time.time()):
             return None
-
         msg = f"{username}|{exp}".encode("utf-8")
         expected_sig = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-
         if not hmac.compare_digest(sig, expected_sig):
             return None
-
         return username
     except Exception:
         return None
@@ -59,28 +55,20 @@ def _verify_remember(secret: str, token: str) -> Optional[str]:
 def _restore_session_from_remember(request: Request) -> None:
     if request.session.get("user"):
         return
-
     token = request.cookies.get(REMEMBER_COOKIE_NAME)
     if not token:
         return
-
     username = _verify_remember(_app_secret(request), token)
     if not username:
         return
-
     user = get_user_by_username(username)
     if not user:
         return
-
     request.session["user"] = username
+    request.session["role"] = user.get("role", "user")
 
 
 def _password_too_long(password: str) -> bool:
-    """Return True if the password's UTF-8 encoding exceeds 72 bytes.
-
-    Bcrypt has a 72-byte input limit; we enforce the same here to avoid
-    truncation issues when hashing.
-    """
     try:
         return len(password.encode("utf-8")) > 72
     except Exception:
@@ -92,16 +80,18 @@ def get_current_user(request: Request) -> Optional[Dict[str, Any]]:
     username = request.session.get("user")
     if not username:
         return None
-    return get_user_by_username(username)
-
-
+    user = get_user_by_username(username)
+    if not user:
+        request.session.clear()
+        return None
+    return user
 
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     if get_current_user(request):
         return RedirectResponse(url="/", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse(request, "login.html", context={"error": None})
 
 
 @router.post("/login")
@@ -113,14 +103,13 @@ def login(
 ):
     username = username.strip().lower()
 
-
-
     if verify_user(username, password):
+        user = get_user_by_username(username)
         request.session["user"] = username
+        request.session["role"] = user.get("role", "user") if user else "user"
         update_last_login(username)
 
         resp = RedirectResponse(url="/", status_code=303)
-
         if remember_me:
             exp = int(time.time()) + REMEMBER_MAX_AGE_SECONDS
             token = _sign_remember(_app_secret(request), username, exp)
@@ -134,12 +123,10 @@ def login(
             )
         else:
             resp.delete_cookie(REMEMBER_COOKIE_NAME)
-
         return resp
 
     return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "error": "Invalid username or password"},
+        request, "login.html", context={"error": "Invalid username or password"},
     )
 
 
@@ -147,7 +134,7 @@ def login(
 def register_page(request: Request):
     if get_current_user(request):
         return RedirectResponse(url="/", status_code=303)
-    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+    return templates.TemplateResponse(request, "register.html", context={"error": None})
 
 
 @router.post("/register")
@@ -161,33 +148,33 @@ def register(
 
     if len(username) < 3:
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Username must be at least 3 characters."},
+            request, "register.html",
+            context={"error": "Username must be at least 3 characters."},
         )
 
     if _password_too_long(password):
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Password too long (max 72 bytes)."},
+            request, "register.html",
+            context={"error": "Password too long (max 72 bytes)."},
         )
 
     if len(password) < 6:
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Password must be at least 6 characters."},
+            request, "register.html",
+            context={"error": "Password must be at least 6 characters."},
         )
 
     if password != confirm_password:
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Passwords do not match."},
+            request, "register.html",
+            context={"error": "Passwords do not match."},
         )
 
     ok = create_user(username, password)
     if not ok:
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Username already exists."},
+            request, "register.html",
+            context={"error": "Username already exists."},
         )
 
     return RedirectResponse(url="/login", status_code=303)
@@ -206,50 +193,60 @@ def profile(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
-
-    return templates.TemplateResponse("profile.html", {"request": request, "user": user})
+    return templates.TemplateResponse(request, "profile.html", context={"user": user})
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(request: Request):
+def admin_dashboard(request: Request, msg: str = None, err: str = None):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
-
     if (user.get("role") or "").lower() != "admin":
         return RedirectResponse(url="/", status_code=303)
 
     users: List[Dict[str, Any]] = list_users()
-    return templates.TemplateResponse("admin.html", {"request": request, "admin": user, "users": users})
+    return templates.TemplateResponse(
+        request, "admin.html",
+        context={
+            "user": user,
+            "users": users,
+            "msg": msg,
+            "err": err,
+            "admin_count": count_admins(),
+        },
+    )
 
 
 @router.post("/admin/role")
 def admin_change_role(
     request: Request,
-    target_username: str = Form(...),
-    new_role: str = Form(...),
+    username: str = Form(...),
+    role: str = Form(...),
 ):
     admin = get_current_user(request)
     if not admin:
         return RedirectResponse(url="/login", status_code=303)
-
     if (admin.get("role") or "").lower() != "admin":
         return RedirectResponse(url="/", status_code=303)
 
-    target_username = target_username.strip().lower()
-    new_role = new_role.strip().lower()
+    target_username = username.strip().lower()
+    new_role = role.strip().lower()
 
     if new_role not in {"admin", "user"}:
-        return RedirectResponse(url="/admin", status_code=303)
+        return RedirectResponse(url="/admin?err=Invalid+role", status_code=303)
 
     if admin.get("username", "").lower() == target_username:
-        return RedirectResponse(url="/admin", status_code=303)
+        return RedirectResponse(
+            url="/admin?err=You+cannot+change+your+own+role", status_code=303
+        )
 
     if new_role == "user":
         target = get_user_by_username(target_username)
         if target and (target.get("role") or "").lower() == "admin":
             if count_admins() <= 1:
-                return RedirectResponse(url="/admin", status_code=303)
+                return RedirectResponse(
+                    url="/admin?err=Cannot+demote+the+last+admin", status_code=303
+                )
 
     set_user_role(target_username, new_role)
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin?msg=Role+updated+successfully", status_code=303)

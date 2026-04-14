@@ -1,68 +1,54 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>My Profile</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
-</head>
-<body>
-  <div class="bg"></div>
+{% extends "base.html" %}
 
-  <div class="container">
-    <div class="glass card">
-      <div class="header">
-        <div class="logo">👤</div>
-        <div>
-          <h1>Profile</h1>
-          <p class="subtitle">Your account details</p>
-        </div>
-      </div>
+{% block title %}Profile — PayShield AI{% endblock %}
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px 0;padding:14px 18px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(8px);box-shadow:inset 0 0 1px rgba(255,255,255,.1);">
-        <div>
-          Signed in as <b>{{ user.username }}</b>
-          {% if user.role == 'admin' %}
-            <span style="margin-left:8px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.15);color:#fff3c4;font-weight:600;font-size:11px;">ADMIN</span>
-          {% else %}
-            <span style="margin-left:8px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.10);font-weight:600;font-size:11px;">USER</span>
-          {% endif %}
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;">
-          <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/">Home</a>
-          {% if user.role == 'admin' %}
-            <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/admin">Admin</a>
-          {% endif %}
-          <a class="btnGhost" style="margin-top:0;padding:8px 12px" href="/logout">Logout</a>
-        </div>
-      </div>
-
-      <div style="border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.08);backdrop-filter:blur(10px);box-shadow:inset 0 0 1px rgba(255,255,255,.1);">
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;align-items:center;">
-          <div style="opacity:.8;font-weight:500;">Username</div>
-          <div><b>{{ user.username }}</b></div>
-
-          <div style="opacity:.8;font-weight:500;">Role</div>
-          <div>
-            {% if user.role == 'admin' %}
-              <span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.15);color:#fff3c4;font-weight:600;font-size:12px;">admin</span>
-            {% else %}
-              <span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.10);font-weight:600;font-size:12px;">user</span>
-            {% endif %}
-          </div>
-
-          <div style="opacity:.8;font-weight:500;">Created At (UTC)</div>
-          <div>{% if user and user.created_at %}{{ user.created_at[8:10] }}-{{ user.created_at[5:7] }}-{{ user.created_at[0:4] }} {{ user.created_at[11:19] }}{% else %}—{% endif %}</div>
-
-          <div style="opacity:.8;font-weight:500;">Last Login (UTC)</div>
-          <div>{% if user and user.last_login %}{{ user.last_login[8:10] }}-{{ user.last_login[5:7] }}-{{ user.last_login[0:4] }} {{ user.last_login[11:19] }}{% else %}—{% endif %}</div>
-        </div>
-      </div>
-
-      <div class="footnote">
-        Tip: Admins can promote/demote users from the Admin Dashboard.
-      </div>
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>My Profile</h1>
+        <p>Your account information</p>
     </div>
-  </div>
-</body>
-</html>
+    <div class="header-actions">
+        <a class="btn btn-ghost btn-sm" href="/">← Dashboard</a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-header">
+        <h2>👤 Account Details</h2>
+        <span class="role-badge {% if user.role == 'admin' %}admin{% endif %}">{{ user.role }}</span>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-key">Username</div>
+        <div class="info-val">{{ user.username }}</div>
+
+        <div class="info-key">Role</div>
+        <div class="info-val">
+            <span class="role-badge {% if user.role == 'admin' %}admin{% endif %}">{{ user.role }}</span>
+        </div>
+
+        <div class="info-key">Created At</div>
+        <div class="info-val">
+            {% if user and user.created_at %}
+                {{ user.created_at[8:10] }}-{{ user.created_at[5:7] }}-{{ user.created_at[0:4] }} {{ user.created_at[11:19] }} UTC
+            {% else %}—{% endif %}
+        </div>
+
+        <div class="info-key">Last Login</div>
+        <div class="info-val">
+            {% if user and user.last_login %}
+                {{ user.last_login[8:10] }}-{{ user.last_login[5:7] }}-{{ user.last_login[0:4] }} {{ user.last_login[11:19] }} UTC
+            {% else %}—{% endif %}
+        </div>
+    </div>
+
+    <div class="footnote">
+        {% if user.role == 'admin' %}
+            You have admin access. Visit <a href="/admin">Admin Panel</a> to manage users.
+        {% else %}
+            Contact an admin to change your role or permissions.
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

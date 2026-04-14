@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction History — PayShield AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Prediction History</h1>
+        <p>Your past fraud detection checks</p>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-primary btn-sm" href="/check">🔍 New Check</a>
+    </div>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+    <div class="kpi-card">
+        <div class="kpi-label">Total Checks</div>
+        <div class="kpi-value">{{ pred_stats.total_checks }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Fraud Detected</div>
+        <div class="kpi-value" style="color: var(--danger);">{{ pred_stats.fraud_detected }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Safe Results</div>
+        <div class="kpi-value" style="color: var(--success);">{{ pred_stats.safe_detected }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Fraud Rate</div>
+        <div class="kpi-value">{{ pred_stats.fraud_rate }}%</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>📋 Recent Predictions</h2>
+        <span class="muted">Last 50 checks</span>
+    </div>
+
+    {% if predictions | length == 0 %}
+    <div style="text-align: center; padding: 40px 20px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
+        <p style="color: var(--text-secondary); font-size: 14px;">You haven't run any predictions yet.</p>
+        <a class="btn btn-primary" href="/check" style="margin-top: 16px;">Check Your First Transaction</a>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Category</th>
+                    <th>Device</th>
+                    <th>Probability</th>
+                    <th>Risk</th>
+                    <th>Result</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td>₹{{ "%.0f" | format(p.amount) }}</td>
+                    <td>{{ p.payment_method }}</td>
+                    <td>{{ p.merchant_category }}</td>
+                    <td>{{ p.device_type }}</td>
+                    <td>{{ (p.fraud_probability * 100) | round(1) }}%</td>
+                    <td>
+                        <span class="risk-pill {% if p.risk_level == 'High' %}risk-high{% elif p.risk_level == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                            {{ p.risk_level }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if p.is_fraud == 1 %}
+                            <span class="tag tag-fraud">Fraud</span>
+                        {% else %}
+                            <span class="tag tag-safe">Safe</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 11px; color: var(--text-muted);">{{ p.created_at[:16] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{
+  "model": "RandomForestClassifier",
+  "n_estimators": 200,
+  "dataset_rows": 50000,
+  "features": [
+    "amount",
+    "transaction_time",
+    "device_type",
+    "location",
+    "payment_method",
+    "merchant_category",
+    "transaction_frequency",
+    "account_age_days",
+    "avg_transaction_amount",
+    "failed_transactions_24h",
+    "is_international",
+    "device_change"
+  ],
+  "accuracy": 0.9998,
+  "precision": 0.9975,
+  "recall": 1.0,
+  "f1_score": 0.9988,
+  "confusion_matrix": [
+    [
+      9198,
+      2
+    ],
+    [
+      0,
+      800
+    ]
+  ],
+  "threshold": 0.45,
+  "resampling": "SMOTE"
+}

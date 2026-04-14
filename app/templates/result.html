@@ -1,134 +1,88 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Result • Fraud Detection</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
-</head>
-<body>
-  <div class="bg"></div>
+{% extends "base.html" %}
 
-  <div class="dashLayout">
-    <!-- Sidebar -->
-    <aside class="dashSide glass">
-      <div class="dashBrand">
-        <div class="dashLogo">{% if is_fraud %}🚨{% else %}✅{% endif %}</div>
-        <div>
-          <div class="dashTitle">Fraud Detection</div>
-          <div class="dashSub">Prediction Result</div>
+{% block title %}Prediction Result — PayShield AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Prediction Result</h1>
+        <p>AI-powered fraud analysis for your transaction</p>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-ghost btn-sm" href="/check">← New Check</a>
+        <a class="btn btn-ghost btn-sm" href="/">Dashboard</a>
+    </div>
+</div>
+
+<div class="card {% if is_fraud %}glow-fraud{% else %}glow-safe{% endif %}" style="max-width: 880px;">
+    <div class="card-header">
+        <h2>{% if is_fraud %}🚨{% else %}✅{% endif %} Verdict</h2>
+        <span class="muted">{% if is_fraud %}Immediate attention recommended{% else %}No fraud indicators detected{% endif %}</span>
+    </div>
+
+    <div class="result-status {% if is_fraud %}status-fraud{% else %}status-safe{% endif %}">
+        {% if is_fraud %}⚠️ Fraudulent Transaction Detected{% else %}✅ Transaction Appears Safe{% endif %}
+    </div>
+
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">Fraud Probability</div>
+            <div class="metric-value">{{ (fraud_probability * 100) | round(2) }}%</div>
         </div>
-      </div>
-
-      <nav class="dashNav">
-        <a class="dashNavItem" href="/">📊 Dashboard</a>
-        <a class="dashNavItem" href="/check">💳 Check Transaction</a>
-      </nav>
-
-      <div class="dashUser">
-        <div class="userAvatar">👤</div>
-        <div class="userText">
-          <div class="userName">{{ user.username }}</div>
-          {% if user.role == 'admin' %}
-            <span class="roleBadge roleAdmin">ADMIN</span>
-          {% else %}
-            <span class="roleBadge">USER</span>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="dashActions">
-        {% if user.role == 'admin' %}
-          <a class="topbarBtn" href="/admin">Admin</a>
-        {% endif %}
-        <a class="topbarBtn" href="/profile">Profile</a>
-        <a class="topbarBtn danger" href="/logout">Logout</a>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <main class="dashMain">
-      <div class="dashTop">
-        <div>
-          <h1 class="dashH1">Transaction Result</h1>
-          <p class="dashP">Prediction summary and the entered transaction details.</p>
-        </div>
-        <div class="dashTopBtns">
-          <a class="btnGhost" href="/check">← New Check</a>
-          <a class="btnGhost" href="/">Dashboard</a>
-        </div>
-      </div>
-
-      <section class="dashCard glass {% if is_fraud %}glowFraud{% else %}glowSafe{% endif %}" style="max-width: 860px;">
-        <div class="dashCardHead">
-          <h2>Status</h2>
-          <span class="muted">{% if is_fraud %}High attention required{% else %}No fraud indicators found{% endif %}</span>
-        </div>
-
-        <div class="status {% if is_fraud %}fraud{% else %}safe{% endif %}">
-          {% if is_fraud %}Fraudulent Transaction{% else %}Safe Transaction{% endif %}
-        </div>
-
-        <div class="metricRow">
-          <div class="metric">
-            <div class="metricLabel">Fraud Probability</div>
-            <div class="metricValue">{{ (fraud_probability * 100) | round(2) }}%</div>
-          </div>
-          <div class="metric">
-            <div class="metricLabel">Decision</div>
-            <div class="metricValue">{% if is_fraud %}FRAUD{% else %}NOT FRAUD{% endif %}</div>
-          </div>
-        </div>
-
-        <div class="detailsCard">
-          <div class="riskRow">
-            <div>
-              <div class="metricLabel">Confidence</div>
-              <div class="riskPercent">{{ (fraud_probability * 100) | round(2) }}% likelihood</div>
+        <div class="metric-card">
+            <div class="metric-label">Model Decision</div>
+            <div class="metric-value" style="color: {% if is_fraud %}var(--danger){% else %}var(--success){% endif %};">
+                {% if is_fraud %}FRAUD{% else %}NOT FRAUD{% endif %}
             </div>
-
-            <div class="riskPill
-              {% if risk_level == 'High' %}riskHigh{% elif risk_level == 'Medium' %}riskMed{% else %}riskLow{% endif %}">
-              {{ risk_level }} Risk
-            </div>
-          </div>
-
-          <div class="bar">
-            <div class="barFill
-              {% if risk_level == 'High' %}barHigh{% elif risk_level == 'Medium' %}barMed{% else %}barLow{% endif %}"
-              style="width: {{ (fraud_probability * 100) | round(0) }}%;">
-            </div>
-          </div>
         </div>
+    </div>
 
-        <div class="dashGrid2" style="margin-top:0;">
-          <div class="detailsCard" style="margin-top:0;">
-            <h2>Why this result?</h2>
-            <ul class="reasons">
-              {% for r in reasons %}
+    <div class="details-card" style="margin-top: 14px;">
+        <div class="risk-bar-container">
+            <div class="risk-header">
+                <span class="risk-label">Risk Confidence</span>
+                <span class="risk-pill {% if risk_level == 'High' %}risk-high{% elif risk_level == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                    {{ risk_level }} Risk
+                </span>
+            </div>
+            <div class="risk-track">
+                <div class="risk-fill {% if risk_level == 'High' %}risk-fill-high{% elif risk_level == 'Medium' %}risk-fill-medium{% else %}risk-fill-low{% endif %}"
+                     style="width: {{ (fraud_probability * 100) | round(0) }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2 mt-md">
+        <div class="details-card" style="margin-top: 0;">
+            <h3>🧠 Why This Result?</h3>
+            <ul class="reason-list">
+                {% for r in reasons %}
                 <li>{{ r }}</li>
-              {% endfor %}
+                {% endfor %}
             </ul>
-          </div>
-
-          <div class="detailsCard" style="margin-top:0;">
-            <h2>Transaction Details</h2>
-            <ul class="details">
-              <li><span class="k">Amount</span><span class="v">₹{{ amount_display }}</span></li>
-              <li><span class="k">Payment Method</span><span class="v">{{ payment_method }}</span></li>
-              <li><span class="k">Merchant Category</span><span class="v">{{ merchant_category }}</span></li>
-              <li><span class="k">Device</span><span class="v">{{ device_label }}</span></li>
-              <li><span class="k">Location</span><span class="v">{{ location_label }}</span></li>
-              <li><span class="k">Time</span><span class="v">{{ transaction_time }}</span></li>
-            </ul>
-          </div>
         </div>
-      </section>
 
-      <div class="footnote" style="text-align:left;max-width:860px;">
-        Tip: Visit the Dashboard to see overall patterns from <b>onlinefraud.csv</b>.
-      </div>
-    </main>
-  </div>
-</body>
-</html>
+        <div class="details-card" style="margin-top: 0;">
+            <h3>📝 Transaction Details</h3>
+            <ul class="detail-list">
+                <li><span class="detail-key">Amount</span><span class="detail-val">₹{{ amount_display }}</span></li>
+                <li><span class="detail-key">Payment Method</span><span class="detail-val">{{ payment_method }}</span></li>
+                <li><span class="detail-key">Category</span><span class="detail-val">{{ merchant_category }}</span></li>
+                <li><span class="detail-key">Device</span><span class="detail-val">{{ device_type }}</span></li>
+                <li><span class="detail-key">Location</span><span class="detail-val">{{ location }}</span></li>
+                <li><span class="detail-key">Time</span><span class="detail-val">{{ "%02d" | format(transaction_time) }}:00</span></li>
+                <li><span class="detail-key">Frequency</span><span class="detail-val">{{ transaction_frequency }}/month</span></li>
+                <li><span class="detail-key">Account Age</span><span class="detail-val">{{ account_age_days }} days</span></li>
+                <li><span class="detail-key">Avg. Amount</span><span class="detail-val">₹{{ avg_transaction_amount }}</span></li>
+                <li><span class="detail-key">Failed (24h)</span><span class="detail-val">{{ failed_transactions_24h }}</span></li>
+                <li><span class="detail-key">International</span><span class="detail-val">{% if is_international == 1 %}Yes 🌍{% else %}No{% endif %}</span></li>
+                <li><span class="detail-key">Device Changed</span><span class="detail-val">{% if device_change == 1 %}Yes 🔄{% else %}No{% endif %}</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="footnote" style="max-width: 880px; text-align: left;">
+    This prediction is saved to your history. Visit <a href="/history">Prediction History</a> to review past checks.
+</div>
+{% endblock %}

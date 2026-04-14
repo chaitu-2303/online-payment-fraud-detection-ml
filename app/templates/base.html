@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="PayShield AI — Intelligent Online Payment Fraud Detection powered by Machine Learning">
+    <title>{% block title %}PayShield AI{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="page-bg"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo">🛡️</div>
+                <div class="sidebar-brand-text">
+                    <h2>PayShield AI</h2>
+                    <span>Fraud Detection System</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="/">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a class="nav-item {% if active_page == 'check' %}active{% endif %}" href="/check">
+                    <span class="nav-icon">🔍</span> Check Transaction
+                </a>
+                <a class="nav-item {% if active_page == 'history' %}active{% endif %}" href="/history">
+                    <span class="nav-icon">📋</span> Prediction History
+                </a>
+                {% if user and user.role == 'admin' %}
+                <a class="nav-item {% if active_page == 'admin' %}active{% endif %}" href="/admin">
+                    <span class="nav-icon">⚙️</span> Admin Panel
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                        <div class="user-name">{{ user.username }}</div>
+                        <span class="role-badge {% if user.role == 'admin' %}admin{% endif %}">{{ user.role }}</span>
+                    </div>
+                </div>
+                <div class="sidebar-actions">
+                    <a class="btn-sidebar" href="/profile">Profile</a>
+                    <a class="btn-sidebar danger" href="/logout">Logout</a>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content animate-in">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">☰</button>
+
+    <script>
+        const toggle = document.getElementById('mobileToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('active');
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            });
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
