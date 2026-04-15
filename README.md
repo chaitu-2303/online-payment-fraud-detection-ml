@@ -203,7 +203,10 @@ This project is for educational and demonstration purposes.
 
 THIS PROJECT IS DONE BY THE TEAM MEMBERS:
 
-1. GEMINI AI
-2. CHATGPT AI
-3. CLAUDE AI
-4. CHAITANYA PAMARTHI (THE DESSION MAKER)
+1. GEMINI AI (<https://gemini.google.com/app/05ce25f6a681239d?hl=en-IN> ,, <https://gemini.google.com/app/059cfbe517802db9?hl=en-IN>)
+2. CHATGPT AI (<https://chatgpt.com/g/g-p-698602d8abb08191accdb41b3f802c1e-homework/project> ,, <https://chatgpt.com/c/69dd41f3-58d8-83e8-b339-c6aefcb25a30>)
+3. CLAUDE AI (<https://claude.ai/chat/d5e553d2-af2f-4f75-a45d-674970e9a716> ,, <https://claude.ai/chat/4f68253c-c8db-4448-aab4-91efeaa9b46e>)
+4. CHAITANYA PAMARTHI (THE DESSION MAKER) ( Email : <pamarthichaitanya1@gmail.com>
+LinkedinURL : <https://www.linkedin.com/in/chaitanya-pamarthi-24b198309?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app>
+
+Github : <https://github.com/chaitu-2303>)
