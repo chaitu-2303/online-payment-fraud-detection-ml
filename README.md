@@ -52,7 +52,10 @@ An intelligent, production-grade web application for detecting fraudulent online
 │   └── data/
 │       └── users.db             # SQLite database (auto-created)
 ├── data/
-│   └── fraud_data.csv           # Training dataset (50,000 rows)
+│   ├── fraud_data.csv           # Model dataset
+│   └── fraud dataset.csv        # Unprocessed dataset
+├── docs/
+│   └── Online Payment Fraud Detection SRS.docx
 ├── ml/
 │   ├── train.py                 # Model training script
 │   └── artifacts/
@@ -66,10 +69,12 @@ An intelligent, production-grade web application for detecting fraudulent online
 ## 🚀 Setup & Run
 
 ### Prerequisites
+
 - Python 3.9 or higher
 - pip (Python package manager)
 
 ### Step 1: Create Virtual Environment
+
 ```bash
 python -m venv venv
 ```
@@ -77,44 +82,52 @@ python -m venv venv
 ### Step 2: Activate Virtual Environment
 
 **Windows (PowerShell):**
+
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
 **Windows (CMD):**
+
 ```cmd
 venv\Scripts\activate.bat
 ```
 
 **Linux/Mac:**
+
 ```bash
 source venv/bin/activate
 ```
 
 ### Step 3: Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Step 4: Train the ML Model
+
 ```bash
 python ml/train.py
 ```
 
 This will:
+
 - Load the 50,000-row dataset
 - Train a Random Forest classifier (200 trees)
 - Save the trained pipeline to `ml/artifacts/pipeline.pkl`
 - Print accuracy, precision, recall, and F1 score
 
 ### Step 5: Run the Application
+
 ```bash
 python -m uvicorn app.main:app --reload
 ```
 
-The app will be available at: **http://127.0.0.1:8000**
+The app will be available at: **<http://127.0.0.1:8000>**
 
 ### Step 6: First-Time Setup
+
 1. Visit `http://127.0.0.1:8000` — you'll be redirected to login
 2. Click **"Create an account"** to register
 3. The **first registered user** automatically becomes **admin**
@@ -151,6 +164,7 @@ The app will be available at: **http://127.0.0.1:8000**
 ## 📊 Dataset Details
 
 The system uses a comprehensive dataset with 50,000 transaction records containing:
+
 - Realistic transaction amounts and patterns
 - Multiple payment methods (UPI, Debit Card, Credit Card, Net Banking, Paytm Wallet)
 - Various merchant categories
