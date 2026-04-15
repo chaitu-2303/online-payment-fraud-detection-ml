@@ -200,3 +200,10 @@ The system uses a comprehensive dataset with 50,000 transaction records containi
 ## 📝 License
 
 This project is for educational and demonstration purposes.
+
+THIS PROJECT IS DONE BY THE TEAM MEMBERS:
+
+1. GEMINI AI
+2. CHATGPT AI
+3. CLAUDE AI
+4. CHAITANYA PAMARTHI (THE DESSION MAKER)
